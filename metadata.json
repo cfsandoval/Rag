@@ -1,0 +1,6 @@
+{
+  "name": "RAG System v1.0",
+  "description": "Sistema de Recuperación Aumentada por Generación (RAG) con búsqueda vectorial y síntesis contextual avanzada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

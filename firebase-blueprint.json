@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Document": {
+      "title": "Document",
+      "description": "Metadata for a uploaded document",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "size": { "type": "number" },
+        "type": { "type": "string" },
+        "status": { "type": "string", "enum": ["processing", "processed", "error"] },
+        "chunkCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "size", "type", "status", "chunkCount", "createdAt", "ownerId"]
+    },
+    "Chunk": {
+      "title": "Chunk",
+      "description": "A single text chunk with its embedding",
+      "type": "object",
+      "properties": {
+        "sourceId": { "type": "string" },
+        "sourceName": { "type": "string" },
+        "text": { "type": "string" },
+        "embedding": { "type": "array", "items": { "type": "number" } },
+        "index": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["sourceId", "sourceName", "text", "embedding", "index", "ownerId"]
+    }
+  },
+  "firestore": {
+    "documents/{docId}": {
+      "schema": "Document",
+      "description": "Metadata for user documents"
+    },
+    "chunks/{chunkId}": {
+      "schema": "Chunk",
+      "description": "Vectorized text chunks for all documents"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return isSignedIn() && data.ownerId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    match /documents/{docId} {
+      allow read: if isOwner(resource.data);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && isValidDocument(request.resource.data)
+        && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(resource.data)
+        && isValidDocument(request.resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          // Action: Update status and chunk count
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'chunkCount'])
+        );
+      allow delete: if isOwner(resource.data);
+    }
+
+    match /chunks/{chunkId} {
+      allow read: if isOwner(resource.data);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidChunk(request.resource.data)
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if isOwner(resource.data);
+    }
+
+    function isValidDocument(data) {
+      return data.keys().hasAll(['name', 'size', 'type', 'status', 'chunkCount', 'createdAt', 'ownerId'])
+        && data.name is string && data.name.size() <= 256
+        && data.size is number && data.size >= 0
+        && data.type is string && data.type.size() <= 128
+        && data.status in ['processing', 'processed', 'error']
+        && data.chunkCount is number && data.chunkCount >= 0
+        && (data.createdAt == request.time || (resource != null && data.createdAt == resource.data.createdAt))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidChunk(data) {
+      return data.keys().hasAll(['sourceId', 'sourceName', 'text', 'embedding', 'index', 'ownerId'])
+        && data.sourceId is string && data.sourceId.size() <= 128
+        && data.sourceName is string && data.sourceName.size() <= 256
+        && data.text is string && data.text.size() <= 10000
+        && data.embedding is list && data.embedding.size() > 0
+        && data.index is number && data.index >= 0
+        && data.ownerId == request.auth.uid;
+    }
+  }
+}
